@@ -1,0 +1,21 @@
+# --- PYTHON ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# --- ANDROID STUDIO ---
+.gradle/
+local.properties
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.DS_Store
+/App/build/
+/App/app/build/
+*.iml
+*.apk
