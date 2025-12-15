@@ -37,6 +37,15 @@ class ControlActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnNext).setOnClickListener { enviarComando("next") }
         findViewById<Button>(R.id.btnPrev).setOnClickListener { enviarComando("prev") }
         findViewById<Button>(R.id.btnBlackout).setOnClickListener { enviarComando("blackout") }
+        // Botón "IR A..." (NumPad)
+        findViewById<Button>(R.id.btnNumPad).setOnClickListener {
+            mostrarDialogoIrA()
+        }
+
+        // Botón "CONSOLA" (DPad)
+        findViewById<Button>(R.id.btnDPad).setOnClickListener {
+            mostrarConsola()
+        }
         findViewById<Button>(R.id.btnResume).setOnClickListener {
             enviarComando("resume")
             // Opcional: Volver a ocultar barras por si aparecieron
@@ -59,12 +68,68 @@ class ControlActivity : AppCompatActivity() {
             true // 'true' indica que ya manejamos el evento y no debe ejecutarse el click normal después
         }
 
-        // Placeholder para los botones extra (para que no truenen si los tocas)
-        findViewById<Button>(R.id.btnNumPad).setOnClickListener { Toast.makeText(this, "Próximamente", Toast.LENGTH_SHORT).show() }
-        findViewById<Button>(R.id.btnDPad).setOnClickListener { Toast.makeText(this, "Próximamente", Toast.LENGTH_SHORT).show() }
-
         // 3. Iniciar el diálogo del tiempo
         mostrarDialogoTiempo()
+    }
+
+
+
+
+
+    // --- FUNCIÓN: IR A DIAPOSITIVA ESPECÍFICA ---
+    private fun mostrarDialogoIrA() {
+        val input = EditText(this)
+        input.hint = "Número de diapositiva"
+        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        input.textAlignment = android.view.View.TEXT_ALIGNMENT_CENTER
+
+        AlertDialog.Builder(this)
+            .setTitle("Saltar a diapositiva")
+            .setView(input)
+            .setPositiveButton("IR") { _, _ ->
+                val numero = input.text.toString()
+                if (numero.isNotEmpty()) {
+                    // Usamos una ruta especial para saltar
+                    enviarPeticion("/jump/$numero")
+                }
+            }
+            .setNegativeButton("CANCELAR", null)
+            .show()
+    }
+
+    // --- FUNCIÓN: MOSTRAR CONSOLA FLOTANTE ---
+    private fun mostrarConsola() {
+        val view = layoutInflater.inflate(R.layout.dialog_dpad, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .setTitle("Control D-Pad")
+            .create()
+
+        // Conectamos los botones del XML a comandos
+        view.findViewById<Button>(R.id.btnUp).setOnClickListener { enviarPeticion("/key/up") }
+        view.findViewById<Button>(R.id.btnDown).setOnClickListener { enviarPeticion("/key/down") }
+        view.findViewById<Button>(R.id.btnLeft).setOnClickListener { enviarPeticion("/key/left") }
+        view.findViewById<Button>(R.id.btnRight).setOnClickListener { enviarPeticion("/key/right") }
+        view.findViewById<Button>(R.id.btnEnter).setOnClickListener { enviarPeticion("/key/enter") }
+        view.findViewById<Button>(R.id.btnTab).setOnClickListener { enviarPeticion("/key/tab") }
+
+        dialog.show()
+    }
+
+    private fun enviarPeticion(rutaRelativa: String) {
+        if (ipServer.isEmpty()) return
+
+        // Si la ruta ya trae "/", no se lo ponemos. Si no, se lo agregamos.
+        // Ejemplo: rutaRelativa puede ser "control/next" o "/jump/5"
+        val path = if (rutaRelativa.startsWith("/")) rutaRelativa else "/control/$rutaRelativa"
+
+        val url = "http://$ipServer:5000$path"
+        val request = Request.Builder().url(url).post(RequestBody.create(null, ByteArray(0))).build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {}
+            override fun onResponse(call: Call, response: Response) { response.close() }
+        })
     }
 
     // --- FUNCIÓN DE DIÁLOGO PARA EL TIEMPO ---
@@ -180,3 +245,5 @@ class ControlActivity : AppCompatActivity() {
         windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
     }
 }
+
+private fun ControlActivity.enviarPeticion(string: String) {}
